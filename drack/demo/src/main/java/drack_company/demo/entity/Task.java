@@ -1,5 +1,7 @@
 package drack_company.demo.entity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,7 +18,7 @@ public class Task {
   @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+@NotBlank
   @Column
     private String title;
 
@@ -26,6 +28,7 @@ public class Task {
  @Column(name = "subject_names")
     private String subjectName;
 
+@FutureOrPresent
  @Column(name = "due_date")
     private LocalDateTime duedate;
 
