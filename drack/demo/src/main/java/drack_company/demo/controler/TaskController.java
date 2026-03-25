@@ -1,6 +1,7 @@
 package drack_company.demo.controler;
 import drack_company.demo.entity.*;
 import drack_company.demo.services.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class TaskController {
         return taskService.getAllTask();
     }
 @PostMapping
-    public Task craeteTask (@RequestBody Task task){
+    public Task craeteTask (@Valid @RequestBody Task task){
    return taskService.createTask(task);
 }
 @PatchMapping("/{id}/status")
