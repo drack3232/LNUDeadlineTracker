@@ -24,7 +24,7 @@ public class Task {
     private String description;
 
  @Column(name = "subject_names")
-    private String subject_names;
+    private String subjectName;
 
  @Column(name = "due_date")
     private LocalDateTime duedate;
