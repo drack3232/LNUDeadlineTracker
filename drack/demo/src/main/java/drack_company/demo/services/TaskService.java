@@ -3,13 +3,18 @@ import drack_company.demo.entity.tasktracker;
 import drack_company.demo.entity.Task;
 import drack_company.demo.repository.TaskRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @Service
 public class TaskService {
     private final TaskRepository taskRepository;
-    TaskService(TaskRepository taskRepository){this.taskRepository = taskRepository;}
+    private final FileService fileService;
+    TaskService(TaskRepository taskRepository, FileService fileService){
+        this.taskRepository = taskRepository;
+        this.fileService = fileService;
+    }
 
     public List<Task> getAllTask (){return taskRepository.findAll();}
     public List<Task> getTaskByStatus(tasktracker status){return taskRepository.findByStatus(status);}
@@ -33,4 +38,14 @@ public class TaskService {
         }
         taskRepository.deleteById(id);
     }
+    public Task attachFileToTask(Long taskId, MultipartFile file){
+      Task task = taskRepository.findById(taskId)
+              .orElseThrow(()-> new IllegalArgumentException("Task with id " + taskId + " not founded"));
+
+String savedFile = fileService.saveFile(file);
+task.setAttachedFileName(savedFile);
+
+return taskRepository.save(task);
+    }
+
 }
