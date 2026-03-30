@@ -42,8 +42,8 @@ public class Task {
     protected void onCreated(){
 this.createdAt = LocalDateTime.now();
  }
-
-    @Column(name = "attached_file_name")
+@Column(name = "attached_file_name")
     private String attachedFileName;
+
 }
 
