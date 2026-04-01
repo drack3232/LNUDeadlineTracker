@@ -16,8 +16,14 @@ public class TaskService {
         this.fileService = fileService;
     }
 
-    public List<Task> getAllTask (){return taskRepository.findAll();}
-    public List<Task> getTaskByStatus(tasktracker status){return taskRepository.findByStatus(status);}
+    public List<Task> getAllTask (){
+
+        return taskRepository.findAll();}
+
+    public List<Task> getTaskByStatus(tasktracker status){
+        return taskRepository.findByStatus(status);}
+
+
     public  Task createTask(Task task){
         if(taskRepository.existsByTitle(task.getTitle())) {
         throw new IllegalArgumentException("Task with title: " + task.getTitle() + " have created");
