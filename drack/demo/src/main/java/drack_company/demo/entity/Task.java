@@ -45,5 +45,8 @@ this.createdAt = LocalDateTime.now();
 @Column(name = "attached_file_name")
     private String attachedFileName;
 
+@Column(name = "chat_id")
+    private Long chatId;
+
 }
 

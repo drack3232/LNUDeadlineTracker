@@ -12,5 +12,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findBySubjectNameAndStatus(String subjectName, tasktracker status);
 
+    List<Task> findByChatId(Long chatId);
+
     boolean existsByTitle(String title);
 }

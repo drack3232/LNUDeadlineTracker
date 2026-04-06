@@ -54,4 +54,8 @@ task.setAttachedFileName(savedFile);
 return taskRepository.save(task);
     }
 
+
+    public List<Task> getTasksByChatId(long chatId) {
+        return taskRepository.findByChatId(chatId);
+    }
 }

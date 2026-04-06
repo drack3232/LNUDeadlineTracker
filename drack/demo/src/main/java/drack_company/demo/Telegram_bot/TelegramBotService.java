@@ -1,22 +1,35 @@
 package drack_company.demo.Telegram_bot;
 
+import drack_company.demo.entity.Task;
+import drack_company.demo.entity.tasktracker;
+import drack_company.demo.services.TaskService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+
+import java.util.List;
 
 @Service
 public class TelegramBotService extends TelegramLongPollingBot {
     private final String botName;
+    private final TaskService taskService;
 
     public TelegramBotService(
             @Value("${telegram.bot.token}") String botToken,
-            @Value("${telegram.bot.username}") String botName
+            @Value("${telegram.bot.username}") String botName,
+            TaskService taskService
     ){
 super(botToken);
 this.botName =botName;
+        this.taskService = taskService;
+
+
     }
 
     @Override
@@ -25,21 +38,46 @@ this.botName =botName;
     }
     @Override
     public void onUpdateReceived(Update update) {
-if(update.hasMessage()&& update.getMessage().hasText()){
-    String massegeText = update.getMessage().getText();
+        if (update.hasMessage() && update.getMessage().hasText()) {
+            String massegeText = update.getMessage().getText();
+
+            long chatId = update.getMessage().getChatId();
+            String userFirstName = update.getMessage().getChat().getFirstName();
+
+            if (massegeText.equals("/start")) {
+                startCommandReceived(chatId, userFirstName);
+            }
+
+            if (massegeText.startsWith("/add")) {
+                if(massegeText.length() <= 5){
+                    sendMessage(chatId,"You forgot to name the task");
+                    return;
+                }
+                String taskTitle = massegeText.substring(5);
+
+                Task newTask = new Task();
+                newTask.setTitle(taskTitle);
+                newTask.setStatus(tasktracker.TODO);
+                newTask.setChatId(chatId);
+                taskService.createTask(newTask);
+                sendMessage(chatId, "Task add: " + taskTitle);
+
+            } else if (massegeText.startsWith("/my_task")) {
+                List<Task> tasks = taskService.getTasksByChatId(chatId);
+                //List<Task> tasks = taskService.getAllTask();
+                if (tasks.isEmpty()) {
+                    sendMessage(chatId, "You don`t have any task. Please add by '/add");
+                } else {
+                    StringBuilder response = new StringBuilder("Your tasks \n");
+                    for (Task t : tasks) {
+                        response.append("_ ").append(t.getTitle()).append("\n");
+                    }
+                    sendMessage(chatId, response.toString());
+                }
+            }
 
 
-    long chatId = update.getMessage().getChatId();
-    String userFirstName = update.getMessage().getChat().getFirstName();
-
-    if (massegeText.equals("/start")){
-        startCommandReceived(chatId, userFirstName);
-
-    }else {
-        sendMessage(chatId, "Sorry, I`m undestand only this command '/start' ");
-    }
-}
-
+        }
     }
     public void  startCommandReceived(long chatId, String name){
         String answer = "Hello " + name;
