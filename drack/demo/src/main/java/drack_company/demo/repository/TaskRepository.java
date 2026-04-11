@@ -15,4 +15,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByChatId(Long chatId);
 
     boolean existsByTitle(String title);
+
+    Long deleteByIdAndChatId(Long id, Long chatid );
 }

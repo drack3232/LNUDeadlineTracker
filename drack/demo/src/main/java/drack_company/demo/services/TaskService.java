@@ -3,6 +3,7 @@ import drack_company.demo.entity.tasktracker;
 import drack_company.demo.entity.Task;
 import drack_company.demo.repository.TaskRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
 public class TaskService {
     private final TaskRepository taskRepository;
     private final FileService fileService;
+
     TaskService(TaskRepository taskRepository, FileService fileService){
         this.taskRepository = taskRepository;
         this.fileService = fileService;
@@ -57,5 +59,10 @@ return taskRepository.save(task);
 
     public List<Task> getTasksByChatId(long chatId) {
         return taskRepository.findByChatId(chatId);
+    }
+    @Transactional
+    public boolean deleteTask(Long id, Long chatid){
+
+        return taskRepository.deleteByIdAndChatId(id, chatid) > 0;
     }
 }

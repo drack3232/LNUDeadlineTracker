@@ -53,6 +53,8 @@ this.botName =botName;
                     sendMessage(chatId,"You forgot to name the task");
                     return;
                 }
+
+
                 String taskTitle = massegeText.substring(5);
 
                 Task newTask = new Task();
@@ -73,6 +75,23 @@ this.botName =botName;
                         response.append("_ ").append(t.getTitle()).append("\n");
                     }
                     sendMessage(chatId, response.toString());
+                }
+            }
+            if (massegeText.startsWith("/delete ")){
+                String idText = massegeText.substring(8).trim();
+                if(massegeText.length() <= 8){
+                    sendMessage(chatId,"enter id the task after command");
+                    return;
+                }
+                try {
+                    Long taskId = Long.parseLong(idText);
+                    taskService.deleteTask(taskId, chatId);
+
+                    sendMessage(chatId, "Task №" + taskId + " delete successful!");
+                }catch (NumberFormatException e){
+                    sendMessage(chatId, "Number the task" + idText + " is`t correct. Enter again.");
+                }catch (Exception e){
+                    sendMessage(chatId, "Task is`n deleted.");
                 }
             }
 
