@@ -10,13 +10,20 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TelegramBotService extends TelegramLongPollingBot {
+    private final Map<Long, String> userState = new ConcurrentHashMap<>();
     private final String botName;
     private final TaskService taskService;
 
@@ -40,17 +47,37 @@ this.botName =botName;
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String massegeText = update.getMessage().getText();
-
             long chatId = update.getMessage().getChatId();
             String userFirstName = update.getMessage().getChat().getFirstName();
 
-            if (massegeText.equals("/start")) {
-                startCommandReceived(chatId, userFirstName);
+            if("AWAITING_TASK_TITLE".equals(userState.get(chatId))){
+                handleTaskInput(chatId, massegeText);
+                return;
             }
 
-            if (massegeText.startsWith("/add")) {
-                if(massegeText.length() <= 5){
-                    sendMessage(chatId,"You forgot to name the task");
+            if(massegeText.equals("➕ Add Task")){
+                sendMessage(chatId, "Okay, send me the title of your new task: ");
+                userState.put(chatId, "AWAITING_TASK_TITLE");
+                return;
+            }
+
+            if (massegeText.equals("/start")) {
+                SendMessage message = new SendMessage();
+                message.setChatId(String.valueOf(chatId));
+                message.setText("Welcome to your Task Tracker! 🚀\nChoose an action below:");
+
+                message.setReplyMarkup(getMainMenuKeyboard());
+                try {
+                    execute(message);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
+
+            if (massegeText.startsWith("/add")||massegeText.equals("➕ Add Task")) {
+                if(massegeText.length() <= 5 || massegeText.equals("➕ Add Task")){
+                    sendMessage(chatId,"Please type `/add` followed by your task name. Example:\\n/add Buy groceries");
                     return;
                 }
 
@@ -64,7 +91,7 @@ this.botName =botName;
                 taskService.createTask(newTask);
                 sendMessage(chatId, "Task add: " + taskTitle);
 
-            } else if (massegeText.startsWith("/my_task")) {
+            } else if (massegeText.startsWith("/my_task")|| massegeText.equals("📋 My Tasks")) {
                 List<Task> tasks = taskService.getTasksByChatId(chatId);
                 //List<Task> tasks = taskService.getAllTask();
                 if (tasks.isEmpty()) {
@@ -76,8 +103,7 @@ this.botName =botName;
                     }
                     sendMessage(chatId, response.toString());
                 }
-            }
-            if (massegeText.startsWith("/delete ")){
+            }else if (massegeText.startsWith("/delete ")){
                 String idText = massegeText.substring(8).trim();
                 if(massegeText.length() <= 8){
                     sendMessage(chatId,"enter id the task after command");
@@ -93,11 +119,49 @@ this.botName =botName;
                 }catch (Exception e){
                     sendMessage(chatId, "Task is`n deleted.");
                 }
+            }else if (massegeText.equals("⚙️ Settings")) {
+                sendMessage(chatId, "Settings menu is under construction. 🛠️");
             }
 
 
         }
     }
+
+    private ReplyKeyboardMarkup getMainMenuKeyboard(){
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+
+        keyboardMarkup.setResizeKeyboard(true);
+        keyboardMarkup.setOneTimeKeyboard(false);
+
+        List<KeyboardRow> keyboardRows = new ArrayList<>();
+
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add(new KeyboardButton("📋 My Tasks"));
+        row1.add(new KeyboardButton("➕ Add Task"));
+
+        KeyboardRow row2 = new KeyboardRow();
+        row2.add(new KeyboardButton("⚙️ Settings"));
+
+        keyboardRows.add(row1);
+        keyboardRows.add(row2);
+
+        keyboardMarkup.setKeyboard(keyboardRows);
+return keyboardMarkup;
+    }
+
+    private void handleTaskInput(long chatId, String taskTitle){
+        Task newTask =new Task();
+        newTask.setTitle(taskTitle);
+        newTask.setChatId(chatId);
+        newTask.setStatus(tasktracker.TODO);
+
+        taskService.createTask(newTask);
+
+        userState.remove(chatId);
+
+        sendMessage(chatId,"Task saved: " + taskTitle);
+    }
+
     public void  startCommandReceived(long chatId, String name){
         String answer = "Hello " + name;
         sendMessage(chatId, answer);
