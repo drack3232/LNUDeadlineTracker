@@ -10,7 +10,9 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -46,6 +48,7 @@ this.botName =botName;
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
+
             String massegeText = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
             String userFirstName = update.getMessage().getChat().getFirstName();
@@ -99,13 +102,40 @@ this.botName =botName;
                 if (tasks.isEmpty()) {
                     sendMessage(chatId, "You don`t have any task. Please add by '/add");
                 } else {
-                    StringBuilder response = new StringBuilder("Your tasks \n");
+                    //   StringBuilder response = new StringBuilder("Your tasks \n");
                     for (Task t : tasks) {
-                        response.append("_ ").append(t.getTitle()).append("\n");
+                       SendMessage message = new SendMessage();
+                       message.setChatId(String.valueOf(chatId));
+                       message.setParseMode("HTML");
+
+                        String cardText = "📌 <b>" + t.getTitle() + "</b>\n" +
+                                "⏳ Status: <i>" + t.getStatus() + "</i>\n" +
+                                "🆔 ID: <code>" + t.getId() + "</code>";
+                        message.setText(cardText);
+
+                        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+                        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+                        List<InlineKeyboardButton> rowInline = new ArrayList<>();
+
+                        InlineKeyboardButton deleteButton = new InlineKeyboardButton();
+                        deleteButton.setText("❌ Delete");
+                        deleteButton.setCallbackData("/delete" + t.getId());
+
+                        rowInline.add(deleteButton);
+                        rowsInline.add(rowInline);
+                        markupInline.setKeyboard(rowsInline);
+
+                        message.setReplyMarkup(markupInline);
+
+                        try {
+                            execute(message);
+                        } catch (TelegramApiException e) {
+                            System.err.println("Error by send message " + e.getMessage());
+                        }
                     }
-                    sendMessage(chatId, response.toString());
+
                 }
-            }else if (massegeText.startsWith("/delete ")){
+            }else if (massegeText.startsWith("/delete")){
                 String idText = massegeText.substring(8).trim();
                 if(massegeText.length() <= 8){
                     sendMessage(chatId,"enter id the task after command");
@@ -122,10 +152,44 @@ this.botName =botName;
                     sendMessage(chatId, "Task is`n deleted.");
                 }
             }else if (massegeText.equals("⚙️ Settings")) {
-                sendMessage(chatId, "Settings menu is under construction. 🛠️");
+                sendMessage(chatId, "Settings menu is under construction. ");
             }
 
 
+        } else if (update.hasCallbackQuery()) {
+            String callbackData = update.getCallbackQuery().getData();
+
+            long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+            Integer messageID = update.getCallbackQuery().getMessage().getMessageId();
+
+            if(callbackData.startsWith("/delete")){
+                String idText = callbackData.substring(8);
+                try {
+                    Long taskId = Long.parseLong(idText);
+                    taskService.deleteTask(taskId,chatId);
+
+                    org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery answer =
+                            new org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery();
+                    answer.setCallbackQueryId(update.getCallbackQuery().getId());
+                    answer.setText("Task delete");
+                    answer.setShowAlert(true);
+                    execute(answer);
+
+                    org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage deleteMessage =
+                            new org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage();
+                    deleteMessage.setChatId(String.valueOf(chatId));
+                    deleteMessage.setMessageId(messageID);
+                    execute(deleteMessage);
+
+                } catch (NumberFormatException e) {
+                    System.out.println("Error parsing id: "  + idText);
+                }catch (TelegramApiException e){
+                    System.out.println("Error deleting a task: " + e.getMessage());
+                }catch (Exception e){
+                    System.out.println("Error. Trouble with BD: " + e.getMessage());
+                }
+            }
         }
     }
 
@@ -172,6 +236,8 @@ private void sendMessage(long chartId, String textToSend){
         SendMessage message =  new SendMessage();
         message.setChatId(String.valueOf(chartId));
         message.setText(textToSend);
+
+        message.setParseMode("HTML");
 
         try {
             execute(message);
