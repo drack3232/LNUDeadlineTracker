@@ -7,7 +7,14 @@ import java.util.List;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByStatus(tasktracker status);
+
     List<Task> findAllByOrderByDuedateAsc();
+
     List<Task> findBySubjectNameAndStatus(String subjectName, tasktracker status);
+
+    List<Task> findByChatId(Long chatId);
+
     boolean existsByTitle(String title);
+
+    Long deleteByIdAndChatId(Long id, Long chatid );
 }
