@@ -53,6 +53,7 @@ this.botName =botName;
             if("AWAITING_TASK_TITLE".equals(userState.get(chatId))){
                 handleTaskInput(chatId, massegeText);
                 return;
+
             }
 
             if(massegeText.equals("➕ Add Task")){
@@ -67,6 +68,7 @@ this.botName =botName;
                 message.setText("Welcome to your Task Tracker! 🚀\nChoose an action below:");
 
                 message.setReplyMarkup(getMainMenuKeyboard());
+
                 try {
                     execute(message);
                 } catch (TelegramApiException e) {
@@ -174,7 +176,9 @@ private void sendMessage(long chartId, String textToSend){
         try {
             execute(message);
         }catch (TelegramApiException ex){
+
 System.err.println("Failed send message: " + ex.getMessage() );
+
         }
 }
 
