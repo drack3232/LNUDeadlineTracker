@@ -119,7 +119,7 @@ this.botName =botName;
 
                         InlineKeyboardButton deleteButton = new InlineKeyboardButton();
                         deleteButton.setText("❌ Delete");
-                        deleteButton.setCallbackData("/delete" + t.getId());
+                        deleteButton.setCallbackData("/delete " + t.getId());
 
                         rowInline.add(deleteButton);
                         rowsInline.add(rowInline);
