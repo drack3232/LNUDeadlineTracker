@@ -102,7 +102,6 @@ this.botName =botName;
                 if (tasks.isEmpty()) {
                     sendMessage(chatId, "You don`t have any task. Please add by '/add");
                 } else {
-                    //   StringBuilder response = new StringBuilder("Your tasks \n");
                     for (Task t : tasks) {
                        SendMessage message = new SendMessage();
                        message.setChatId(String.valueOf(chatId));
