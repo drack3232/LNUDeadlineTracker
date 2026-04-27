@@ -4,9 +4,11 @@ import drack_company.demo.entity.Task;
 import drack_company.demo.entity.tasktracker;
 import drack_company.demo.services.TaskService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -95,40 +97,23 @@ this.botName =botName;
                 sendMessage(chatId, "Task add: " + taskTitle);
 
             } else if (massegeText.startsWith("/my_task") || massegeText.equals("📋 My Tasks")) {
-                List<Task> tasks = taskService.getTasksByChatId(chatId);
-                //List<Task> tasks = taskService.getAllTask();
+                Page<Task> taskPage = taskService.getTaskPage(chatId,tasktracker.TODO,0);
 
-                if (tasks.isEmpty()) {
-                    sendMessage(chatId, "You don`t have any task. Please add by '/add");
-                } else {
-                    for (Task t : tasks) {
-                        SendMessage message = new SendMessage();
-                        message.setChatId(String.valueOf(chatId));
-                        message.setParseMode("HTML");
+                if (!taskPage.hasContent()) {
+                    sendMessage(chatId, "You don`t have any active task. Please add by '/add'");
+                } else{
+                    Task t = taskPage.getContent().get(0);
+                    SendMessage message = new SendMessage();
+                    message.setChatId(String.valueOf(chatId));
+                    message.setParseMode("HTML");
 
-                        String cardText = "📌 <b>" + t.getTitle() + "</b>\n" +
-                                "⏳ Status: <i>" + t.getStatus() + "</i>\n" +
-                                "🆔 ID: <code>" + t.getId() + "</code>";
-                        message.setText(cardText);
+                    String cardText = "📌 <b>" + t.getTitle() + "</b>\n" +
+                            "⏳ Status: <i>" + t.getStatus() + "</i>\n" +
+                            "🆔 ID: <code>" + t.getId() + "</code>";
+                    message.setText(cardText);
 
-                         InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
-                        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-                        List<InlineKeyboardButton> rowInline = new ArrayList<>();
-
-                        InlineKeyboardButton deleteButton = new InlineKeyboardButton();
-                        deleteButton.setText("❌ Delete");
-                        deleteButton.setCallbackData("/delete " + t.getId());
-
-                        InlineKeyboardButton doneButton = new InlineKeyboardButton();
-                        doneButton.setText("✅ Done");
-                        doneButton.setCallbackData("/done " + t.getId());
-
-                        rowInline.add(deleteButton);
-                        rowInline.add(doneButton);
-                        rowsInline.add(rowInline);
-                        markupInline.setKeyboard(rowsInline);
-
-                        message.setReplyMarkup(markupInline);
+                    InlineKeyboardMarkup keyboardMarkup = botUiService.generateTaskButtons(taskPage,0);
+                    message.setReplyMarkup(keyboardMarkup);
 
                         try {
                             execute(message);
@@ -137,7 +122,7 @@ this.botName =botName;
                         }
                     }
 
-                }
+
             } else if (massegeText.startsWith("/delete")) {
                 String idText = massegeText.substring(8).trim();
                 if (massegeText.length() <= 8) {
@@ -204,6 +189,32 @@ this.botName =botName;
                 } catch (Exception e) {
                     System.err.println("Error with (Done): " + e.getMessage());
                 }
+            }else if(callbackData.startsWith("/page_todo")){
+                String idText = callbackData.substring(10).trim();
+                int pageNumber = Integer.parseInt(idText);
+
+                Page<Task> page = taskService.getTaskPage(chatId,tasktracker.TODO,pageNumber);
+                Task t = page.getContent().get(0);
+
+                String cardText = "📌 <b>" + t.getTitle() + "</b>\n" +
+                        "⏳ Status: <i>" + t.getStatus() + "</i>\n" +
+                        "🆔 ID: <code>" + t.getId() + "</code>";
+
+                botUiService.generateTaskButtons(page,pageNumber);
+
+                EditMessageText editMessageText = new EditMessageText();
+               editMessageText.setChatId(String.valueOf(chatId));
+               editMessageText.setMessageId(messageID);
+               editMessageText.setText(cardText);
+               editMessageText.setParseMode("HTML");
+               InlineKeyboardMarkup button = botUiService.generateTaskButtons(page,pageNumber);
+               editMessageText.setReplyMarkup(button);
+
+               try {
+                   execute(editMessageText);
+               }catch (TelegramApiException e){
+                   e.printStackTrace();
+               }
             }
         }
     }

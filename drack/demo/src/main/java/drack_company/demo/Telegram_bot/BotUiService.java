@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 @Service
 public class BotUiService {
-    private InlineKeyboardMarkup generateTaskButtons(Page<Task> taskPage, int curentPage){
+    public InlineKeyboardMarkup generateTaskButtons(Page<Task> taskPage, int curentPage){
 
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         Task curentTask = taskPage.getContent().get(0);
@@ -23,13 +23,13 @@ public class BotUiService {
        if(taskPage.hasPrevious()){
            InlineKeyboardButton backButton = new InlineKeyboardButton();
            backButton.setText("↩ Back");
-           backButton.setCallbackData("/spage_todo " + (curentPage-1));
+           backButton.setCallbackData("/page_todo" + (curentPage - 1));
            navRow.add(backButton);
        }
        if(taskPage.hasNext()){
            InlineKeyboardButton nextButton = new InlineKeyboardButton();
            nextButton.setText(" ╰┈➤ˎˊ˗Next");
-           nextButton.setCallbackData("/page_todo " + (curentPage-1));
+           nextButton.setCallbackData("/page_todo" + (curentPage + 1));
            navRow.add(nextButton);
        }
         InlineKeyboardButton deleteButton = new InlineKeyboardButton();
