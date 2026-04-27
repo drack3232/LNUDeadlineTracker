@@ -3,11 +3,9 @@ package drack_company.demo.Telegram_bot;
 import drack_company.demo.entity.Task;
 import drack_company.demo.entity.tasktracker;
 import drack_company.demo.services.TaskService;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -16,7 +14,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,17 +26,17 @@ public class TelegramBotService extends TelegramLongPollingBot {
     private final Map<Long, String> userState = new ConcurrentHashMap<>();
     private final String botName;
     private final TaskService taskService;
+    private final BotUiService botUiService;
 
     public TelegramBotService(
             @Value("${telegram.bot.token}") String botToken,
             @Value("${telegram.bot.username}") String botName,
-            TaskService taskService
+            TaskService taskService, BotUiService botUiService
     ){
 super(botToken);
 this.botName =botName;
         this.taskService = taskService;
-
-
+        this.botUiService = botUiService;
     }
 
     @Override
@@ -53,13 +51,13 @@ this.botName =botName;
             long chatId = update.getMessage().getChatId();
             String userFirstName = update.getMessage().getChat().getFirstName();
 
-            if("AWAITING_TASK_TITLE".equals(userState.get(chatId))){
+            if ("AWAITING_TASK_TITLE".equals(userState.get(chatId))) {
                 handleTaskInput(chatId, massegeText);
                 return;
 
             }
 
-            if(massegeText.equals("➕ Add Task")){
+            if (massegeText.equals("➕ Add Task")) {
                 sendMessage(chatId, "Okay, send me the title of your new task: ");
                 userState.put(chatId, "AWAITING_TASK_TITLE");
                 return;
@@ -80,9 +78,9 @@ this.botName =botName;
                 return;
             }
 
-            if (massegeText.startsWith("/add")||massegeText.equals("➕ Add Task")) {
-                if(massegeText.length() <= 5 || massegeText.equals("➕ Add Task")){
-                    sendMessage(chatId,"Please type `/add` followed by your task name. Example:\\n/add Buy groceries");
+            if (massegeText.startsWith("/add") || massegeText.equals("➕ Add Task")) {
+                if (massegeText.length() <= 5 || massegeText.equals("➕ Add Task")) {
+                    sendMessage(chatId, "Please type `/add` followed by your task name. Example:\\n/add Buy groceries");
                     return;
                 }
 
@@ -96,16 +94,17 @@ this.botName =botName;
                 taskService.createTask(newTask);
                 sendMessage(chatId, "Task add: " + taskTitle);
 
-            } else if (massegeText.startsWith("/my_task")|| massegeText.equals("📋 My Tasks")) {
+            } else if (massegeText.startsWith("/my_task") || massegeText.equals("📋 My Tasks")) {
                 List<Task> tasks = taskService.getTasksByChatId(chatId);
                 //List<Task> tasks = taskService.getAllTask();
+
                 if (tasks.isEmpty()) {
                     sendMessage(chatId, "You don`t have any task. Please add by '/add");
                 } else {
                     for (Task t : tasks) {
-                       SendMessage message = new SendMessage();
-                       message.setChatId(String.valueOf(chatId));
-                       message.setParseMode("HTML");
+                        SendMessage message = new SendMessage();
+                        message.setChatId(String.valueOf(chatId));
+                        message.setParseMode("HTML");
 
                         String cardText = "📌 <b>" + t.getTitle() + "</b>\n" +
                                 "⏳ Status: <i>" + t.getStatus() + "</i>\n" +
@@ -118,9 +117,14 @@ this.botName =botName;
 
                         InlineKeyboardButton deleteButton = new InlineKeyboardButton();
                         deleteButton.setText("❌ Delete");
-                        deleteButton.setCallbackData("/delete" + t.getId());
+                        deleteButton.setCallbackData("/delete " + t.getId());
+
+                        InlineKeyboardButton doneButton = new InlineKeyboardButton();
+                        doneButton.setText("✅ Done");
+                        doneButton.setCallbackData("/done " + t.getId());
 
                         rowInline.add(deleteButton);
+                        rowInline.add(doneButton);
                         rowsInline.add(rowInline);
                         markupInline.setKeyboard(rowsInline);
 
@@ -134,10 +138,10 @@ this.botName =botName;
                     }
 
                 }
-            }else if (massegeText.startsWith("/delete")){
+            } else if (massegeText.startsWith("/delete")) {
                 String idText = massegeText.substring(8).trim();
-                if(massegeText.length() <= 8){
-                    sendMessage(chatId,"enter id the task after command");
+                if (massegeText.length() <= 8) {
+                    sendMessage(chatId, "enter id the task after command");
                     return;
                 }
                 try {
@@ -145,12 +149,12 @@ this.botName =botName;
                     taskService.deleteTask(taskId, chatId);
 
                     sendMessage(chatId, "Task №" + taskId + " delete successful!");
-                }catch (NumberFormatException e){
+                } catch (NumberFormatException e) {
                     sendMessage(chatId, "Number the task" + idText + " is`t correct. Enter again.");
-                }catch (Exception e){
+                } catch (Exception e) {
                     sendMessage(chatId, "Task is`n deleted.");
                 }
-            }else if (massegeText.equals("⚙️ Settings")) {
+            } else if (massegeText.equals("⚙️ Settings")) {
                 sendMessage(chatId, "Settings menu is under construction. ");
             }
 
@@ -162,11 +166,11 @@ this.botName =botName;
 
             Integer messageID = update.getCallbackQuery().getMessage().getMessageId();
 
-            if(callbackData.startsWith("/delete")){
+            if (callbackData.startsWith("/delete")) {
                 String idText = callbackData.substring(8);
                 try {
                     Long taskId = Long.parseLong(idText);
-                    taskService.deleteTask(taskId,chatId);
+                    taskService.deleteTask(taskId, chatId);
 
                     org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery answer =
                             new org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery();
@@ -182,11 +186,23 @@ this.botName =botName;
                     execute(deleteMessage);
 
                 } catch (NumberFormatException e) {
-                    System.out.println("Error parsing id: "  + idText);
-                }catch (TelegramApiException e){
+                    System.out.println("Error parsing id: " + idText);
+                } catch (TelegramApiException e) {
                     System.out.println("Error deleting a task: " + e.getMessage());
-                }catch (Exception e){
+                } catch (Exception e) {
                     System.out.println("Error. Trouble with BD: " + e.getMessage());
+                }
+
+            } else if (callbackData.startsWith("/done" )) {
+                String idText = callbackData.substring(5);
+                try {
+                    Long taskId = Long.parseLong(idText.trim());
+                     taskService.markAsDone(taskId);
+
+                    String updatedText = "<b>✅ Completed:</b> <s>Task #\" + taskId + \"</s>\\n\uD83D\uDD52 Deadline: <i> null </i>";
+                    botUiService.editTaskMessage(this, chatId, messageID, updatedText, null);
+                } catch (Exception e) {
+                    System.err.println("Error with (Done): " + e.getMessage());
                 }
             }
         }

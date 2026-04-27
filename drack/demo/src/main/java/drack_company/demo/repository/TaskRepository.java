@@ -1,6 +1,7 @@
 package drack_company.demo.repository;
 import drack_company.demo.entity.tasktracker;
 import drack_company.demo.entity.Task;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -17,4 +18,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     boolean existsByTitle(String title);
 
     Long deleteByIdAndChatId(Long id, Long chatid );
+
+    Page<Task> findByChatIdAndStatus(Long chatId, tasktracker status, org.springframework.data.domain.Pageable pageable);
+
 }
