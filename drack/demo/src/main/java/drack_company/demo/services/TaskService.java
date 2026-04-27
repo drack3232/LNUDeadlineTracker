@@ -61,21 +61,25 @@ return taskRepository.save(task);
     public List<Task> getTasksByChatId(long chatId) {
         return taskRepository.findByChatId(chatId);
     }
+
     @Transactional
     public boolean deleteTask(Long id, Long chatid){
 
         return taskRepository.deleteByIdAndChatId(id, chatid) > 0;
     }
 
-    public void markAsDone(Long taskId){
+    public boolean markAsDone(Long taskId){
         Optional<Task> optionalTask = taskRepository.findById(taskId);
+
         if(optionalTask.isPresent()){
             Task task = optionalTask.get();
             task.setStatus(tasktracker.valueOf("DONE"));
             taskRepository.save(task);
             System.out.println("Task# "+ taskId + " saved successful");
+            return true;
         }else {
             System.out.println("Error Task# " + taskId + " don`t defined");
+            return false;
         }
     }
 }

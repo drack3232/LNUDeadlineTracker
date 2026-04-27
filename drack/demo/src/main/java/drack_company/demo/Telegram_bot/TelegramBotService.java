@@ -3,11 +3,9 @@ package drack_company.demo.Telegram_bot;
 import drack_company.demo.entity.Task;
 import drack_company.demo.entity.tasktracker;
 import drack_company.demo.services.TaskService;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -16,7 +14,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,7 +118,12 @@ this.botName =botName;
                         deleteButton.setText("❌ Delete");
                         deleteButton.setCallbackData("/delete " + t.getId());
 
+                        InlineKeyboardButton doneButton = new InlineKeyboardButton();
+                        doneButton.setText("✅ Done");
+                        doneButton.setCallbackData("/done " + t.getId());
+
                         rowInline.add(deleteButton);
+                        rowInline.add(doneButton);
                         rowsInline.add(rowInline);
                         markupInline.setKeyboard(rowsInline);
 
@@ -188,12 +191,14 @@ this.botName =botName;
                 } catch (Exception e) {
                     System.out.println("Error. Trouble with BD: " + e.getMessage());
                 }
-            } else if (callbackData.startsWith("/done ")) {
+
+            } else if (callbackData.startsWith("/done" )) {
                 String idText = callbackData.substring(5);
                 try {
-                    Long taskId = Long.parseLong(idText);
+                    Long taskId = Long.parseLong(idText.trim());
                      taskService.markAsDone(taskId);
-                    String updatedText = "<b>✅ Виконано:</b> <s>Таска #\" + taskId + \"</s>\\n\uD83D\uDD52 Дедлайн: <i>не встановлено</i>";
+
+                    String updatedText = "<b>✅ Completed:</b> <s>Task #\" + taskId + \"</s>\\n\uD83D\uDD52 Deadline: <i> null </i>";
                     botUiService.editTaskMessage(this, chatId, messageID, updatedText, null);
                 } catch (Exception e) {
                     System.err.println("Error with (Done): " + e.getMessage());
