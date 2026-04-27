@@ -2,6 +2,8 @@ package drack_company.demo.services;
 import drack_company.demo.entity.tasktracker;
 import drack_company.demo.entity.Task;
 import drack_company.demo.repository.TaskRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -81,5 +83,10 @@ return taskRepository.save(task);
             System.out.println("Error Task# " + taskId + " don`t defined");
             return false;
         }
+    }
+
+    public Page <Task> getTaskPage(Long chatId, tasktracker status, int pageNomber){
+        Page <Task> page = taskRepository.findByChatIdAndStatus( chatId, status, PageRequest.of(pageNomber,1));
+return page;
     }
 }

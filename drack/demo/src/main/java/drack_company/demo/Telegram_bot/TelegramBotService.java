@@ -97,6 +97,7 @@ this.botName =botName;
             } else if (massegeText.startsWith("/my_task") || massegeText.equals("📋 My Tasks")) {
                 List<Task> tasks = taskService.getTasksByChatId(chatId);
                 //List<Task> tasks = taskService.getAllTask();
+
                 if (tasks.isEmpty()) {
                     sendMessage(chatId, "You don`t have any task. Please add by '/add");
                 } else {
