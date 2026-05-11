@@ -64,7 +64,7 @@ this.botName =botName;
                 userState.put(chatId, "AWAITING_TASK_TITLE");
                 return;
             }
-
+            //for button "start"
             if (massegeText.equals("/start")) {
                 SendMessage message = new SendMessage();
                 message.setChatId(String.valueOf(chatId));
@@ -79,7 +79,7 @@ this.botName =botName;
                 }
                 return;
             }
-
+            //for add task
             if (massegeText.startsWith("/add") || massegeText.equals("➕ Add Task")) {
                 if (massegeText.length() <= 5 || massegeText.equals("➕ Add Task")) {
                     sendMessage(chatId, "Please type `/add` followed by your task name. Example:\\n/add Buy groceries");
@@ -93,10 +93,13 @@ this.botName =botName;
                 newTask.setTitle(taskTitle);
                 newTask.setStatus(tasktracker.TODO);
                 newTask.setChatId(chatId);
+
                 taskService.createTask(newTask);
                 sendMessage(chatId, "Task add: " + taskTitle);
 
-            } else if (massegeText.startsWith("/my_task") || massegeText.equals("📋 My Tasks")) {
+            }
+            //look at your task
+            else if (massegeText.startsWith("/my_task") || massegeText.equals("📋 My Tasks")) {
                 Page<Task> taskPage = taskService.getTaskPage(chatId,tasktracker.TODO,0);
 
                 if (!taskPage.hasContent()) {
@@ -106,14 +109,25 @@ this.botName =botName;
                     SendMessage message = new SendMessage();
                     message.setChatId(String.valueOf(chatId));
                     message.setParseMode("HTML");
+                    message.setText("\uD83D\uDCC2 What do you want open?");
 
-                    String cardText = "📌 <b>" + t.getTitle() + "</b>\n" +
-                            "⏳ Status: <i>" + t.getStatus() + "</i>\n" +
-                            "🆔 ID: <code>" + t.getId() + "</code>";
-                    message.setText(cardText);
+ InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+ List<List<InlineKeyboardButton>> rowInLine = new ArrayList<>();
+ List<InlineKeyboardButton> buttons = new ArrayList<>();
 
-                    InlineKeyboardMarkup keyboardMarkup = botUiService.generateTaskButtons(taskPage,0);
-                    message.setReplyMarkup(keyboardMarkup);
+ InlineKeyboardButton todoButton = new InlineKeyboardButton();
+ todoButton.setText("⏳ Active");
+ todoButton.setCallbackData("list.TODO");
+
+ InlineKeyboardButton doneButton = new InlineKeyboardButton();
+ doneButton.setText("Done");
+ doneButton.setCallbackData("list.DONE");
+
+buttons.add(todoButton);
+buttons.add(doneButton);
+rowInLine.add(buttons);
+keyboardMarkup.setKeyboard(rowInLine);
+message.setReplyMarkup(keyboardMarkup);
 
                         try {
                             execute(message);
@@ -121,9 +135,9 @@ this.botName =botName;
                             System.err.println("Error by send message " + e.getMessage());
                         }
                     }
+            }
 
-
-            } else if (massegeText.startsWith("/delete")) {
+            else if (massegeText.startsWith("/delete")) {
                 String idText = massegeText.substring(8).trim();
                 if (massegeText.length() <= 8) {
                     sendMessage(chatId, "enter id the task after command");
@@ -188,12 +202,46 @@ this.botName =botName;
                     botUiService.editTaskMessage(this, chatId, messageID, updatedText, null);
                 } catch (Exception e) {
                     System.err.println("Error with (Done): " + e.getMessage());
-                }
-            }else if(callbackData.startsWith("/page_todo")){
-                String idText = callbackData.substring(10).trim();
-                int pageNumber = Integer.parseInt(idText);
 
-                Page<Task> page = taskService.getTaskPage(chatId,tasktracker.TODO,pageNumber);
+                } }
+            else if (callbackData.startsWith("list")) {
+                String statusText = callbackData.substring(5);
+                tasktracker  currentTask = tasktracker.valueOf(statusText);
+              Page<Task> taskPage = taskService.getTaskPage(chatId, currentTask, 0);
+                EditMessageText editMessage = new EditMessageText();
+                editMessage.setChatId(String.valueOf(chatId));
+                editMessage.setMessageId(messageID);
+                editMessage.setParseMode("HTML");
+
+                if(taskPage.isEmpty()) {
+                    editMessage.setText("You dont have the following tasks: <b>" + statusText + "</b>" );
+                }else {
+                    Task t = taskPage.getContent().get(0);
+
+                    String cardText = "📌 <b>" + t.getTitle() + "</b>\n" +
+                            "⏳ Status: <i>" + t.getStatus() + "</i>\n" +
+                            "🆔 ID: <code>" + t.getId() + "</code>";
+                    editMessage.setText(cardText);
+
+                    editMessage.setReplyMarkup(botUiService.generateTaskButtons(taskPage, 0));
+                }
+                try {
+                    execute(editMessage);
+                }catch (TelegramApiException e) {
+                    System.err.println("Error by send message " + e.getMessage());
+                }
+
+
+
+            }
+            //For next or last task
+            else if(callbackData.startsWith("/page_")){
+                String idText = callbackData.substring(10).trim();
+                String[] part = callbackData.split("_");
+                tasktracker currentStatus = tasktracker.valueOf(part[1].toUpperCase());
+                int pageNumber = Integer.parseInt(part[2]);
+
+                Page<Task> page = taskService.getTaskPage(chatId,currentStatus,pageNumber);
                 Task t = page.getContent().get(0);
 
                 String cardText = "📌 <b>" + t.getTitle() + "</b>\n" +
@@ -215,6 +263,41 @@ this.botName =botName;
                }catch (TelegramApiException e){
                    e.printStackTrace();
                }
+            }
+            else if (callbackData.equals("/comback ")){
+                EditMessageText editMessageText = new EditMessageText();
+                editMessageText.setChatId(String.valueOf(chatId));
+                editMessageText.setMessageId(messageID);
+                editMessageText.setText("\uD83D\uDCC1 What do you want open?");
+
+                InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+                List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+                List<InlineKeyboardButton> buttons = new ArrayList<>();
+
+                InlineKeyboardButton todoButton = new InlineKeyboardButton();
+                todoButton.setText("Active");
+                todoButton.setCallbackData("list_TODO");
+
+                InlineKeyboardButton doneButton = new InlineKeyboardButton();
+                doneButton.setText("Done");
+                doneButton.setCallbackData("list_DONE");
+
+                buttons.add(todoButton);
+                buttons.add(doneButton);
+                rows.add(buttons);
+                keyboardMarkup.setKeyboard(rows);
+                editMessageText.setReplyMarkup(keyboardMarkup);
+
+                try {
+                    execute(editMessageText);
+                    org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery answer =
+                            new org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery();
+                    answer.setCallbackQueryId(update.getCallbackQuery().getId());
+                    execute(answer);
+                }catch (TelegramApiException e)
+                {
+                    System.err.println("Error by send message " + e.getMessage());
+                }
             }
         }
     }
@@ -238,6 +321,7 @@ this.botName =botName;
         keyboardRows.add(row2);
 
         keyboardMarkup.setKeyboard(keyboardRows);
+
 return keyboardMarkup;
     }
 

@@ -1,6 +1,7 @@
 package drack_company.demo.Telegram_bot;
 import java.util.List;
 import drack_company.demo.entity.Task;
+import drack_company.demo.entity.tasktracker;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -16,6 +17,7 @@ public class BotUiService {
     public InlineKeyboardMarkup generateTaskButtons(Page<Task> taskPage, int curentPage){
 
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        tasktracker currentStatus = taskPage.getContent().get(0).getStatus();
         Task curentTask = taskPage.getContent().get(0);
        List <InlineKeyboardButton> actionRow = new ArrayList<>();
        List<InlineKeyboardButton> navRow = new ArrayList<>();
@@ -23,28 +25,38 @@ public class BotUiService {
        if(taskPage.hasPrevious()){
            InlineKeyboardButton backButton = new InlineKeyboardButton();
            backButton.setText("↩ Back");
-           backButton.setCallbackData("/page_todo" + (curentPage - 1));
+           backButton.setCallbackData("/page_" +currentStatus.name()+"_"+ +(curentPage - 1));
            navRow.add(backButton);
        }
        if(taskPage.hasNext()){
            InlineKeyboardButton nextButton = new InlineKeyboardButton();
            nextButton.setText(" ╰┈➤ˎˊ˗Next");
-           nextButton.setCallbackData("/page_todo" + (curentPage + 1));
+           nextButton.setCallbackData("/page_" +currentStatus.name()+"_"+ (curentPage + 1));
            navRow.add(nextButton);
        }
         InlineKeyboardButton deleteButton = new InlineKeyboardButton();
         deleteButton.setText("❌ Delete");
         deleteButton.setCallbackData("/delete " + curentTask.getId());
 
-        InlineKeyboardButton doneButton = new InlineKeyboardButton();
-        doneButton.setText("✅ Done");
-        doneButton.setCallbackData("/done " + curentTask.getId());
+        InlineKeyboardButton combackButton = new InlineKeyboardButton();
+        combackButton.setText("\uD83D\uDCDD Menu");
+        combackButton.setCallbackData("/comback " );
 
+if(curentTask.getStatus() ==tasktracker.TODO) {
+    InlineKeyboardButton doneButton = new InlineKeyboardButton();
+    doneButton.setText("✅ Done");
+    doneButton.setCallbackData("/done " + curentTask.getId());
+    actionRow.add(doneButton);
+}
+
+        List<InlineKeyboardButton> menuRow = new ArrayList<>();
+        menuRow.add(combackButton);
         actionRow.add(deleteButton);
-        actionRow.add(doneButton);
+
 
         List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
         rowList.add(actionRow);
+        rowList.add(menuRow);
 
         if(!navRow.isEmpty()){
             rowList.add(navRow);

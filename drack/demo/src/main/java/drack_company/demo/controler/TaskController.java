@@ -38,11 +38,13 @@ public class TaskController {
   Task savedTask = taskService.createTask(taslToSave);
   return taskMapper.toResponse(savedTask);
 }
+
 @PatchMapping("/{id}/status")
     public TaskResponse updateTask(@PathVariable Long id, @RequestParam tasktracker status){
        Task updateTask = taskService.updateTaskStatus(id, status);
         return taskMapper.toResponse(updateTask);
 }
+
 @PostMapping(value = "/{id}/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 public TaskResponse uploadTaskFile(@PathVariable Long id, @RequestParam("file")MultipartFile file){
         Task updateTask = taskService.attachFileToTask(id, file);
