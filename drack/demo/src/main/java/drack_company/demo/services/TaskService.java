@@ -42,6 +42,11 @@ public class TaskService {
         existingTask.setStatus(newStatus);
         return taskRepository.save(existingTask);
     }
+
+    public void updateTask(Task task) {
+        taskRepository.save(task);
+    }
+
     public void deleteTask(Long id){
         if(!taskRepository.existsById(id)){
             throw new RuntimeException("Impossible delete:task with Id " +  id  + " not found");
@@ -88,5 +93,8 @@ return taskRepository.save(task);
     public Page <Task> getTaskPage(Long chatId, tasktracker status, int pageNomber){
         Page <Task> page = taskRepository.findByChatIdAndStatus( chatId, status, PageRequest.of(pageNomber,1));
 return page;
+    }
+    public  Task getTaskById(Long id){
+     return  taskRepository.findById(id).orElse(null);
     }
 }

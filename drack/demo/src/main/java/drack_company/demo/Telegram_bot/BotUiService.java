@@ -42,6 +42,12 @@ public class BotUiService {
         combackButton.setText("\uD83D\uDCDD Menu");
         combackButton.setCallbackData("/comback " );
 
+        InlineKeyboardButton photoButton = new InlineKeyboardButton();
+        photoButton.setText("\uD83D\uDDBC Photo");
+        photoButton.setCallbackData("/photo_" + curentTask.getId());
+//        photoButton.setCallbackData("/photo_");
+
+
 if(curentTask.getStatus() ==tasktracker.TODO) {
     InlineKeyboardButton doneButton = new InlineKeyboardButton();
     doneButton.setText("✅ Done");
@@ -49,8 +55,10 @@ if(curentTask.getStatus() ==tasktracker.TODO) {
     actionRow.add(doneButton);
 }
 
+
         List<InlineKeyboardButton> menuRow = new ArrayList<>();
         menuRow.add(combackButton);
+        menuRow.add(photoButton);
         actionRow.add(deleteButton);
 
 

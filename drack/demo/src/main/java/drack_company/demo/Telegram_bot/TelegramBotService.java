@@ -8,7 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -18,6 +20,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class TelegramBotService extends TelegramLongPollingBot {
     private final Map<Long, String> userState = new ConcurrentHashMap<>();
+    private final Map<Long, Long> userPhoto = new ConcurrentHashMap<>();
     private final String botName;
     private final TaskService taskService;
     private final BotUiService botUiService;
@@ -135,6 +140,8 @@ message.setReplyMarkup(keyboardMarkup);
                             System.err.println("Error by send message " + e.getMessage());
                         }
                     }
+
+
             }
 
             else if (massegeText.startsWith("/delete")) {
@@ -298,7 +305,48 @@ message.setReplyMarkup(keyboardMarkup);
                 {
                     System.err.println("Error by send message " + e.getMessage());
                 }
+            }else if(callbackData.startsWith("/photo_")){
+                String idText = callbackData.substring(7).trim();
+
+
+                try {
+                    Long id = Long.parseLong(idText);
+                    userPhoto.put(chatId,id);
+
+                    sendMessage(chatId, "Good job, kid. Now just send me a photo");
+
+                    org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery answer =
+                            new org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery();
+                    answer.setCallbackQueryId(update.getCallbackQuery().getId());
+                    execute(answer);
+
+                }catch (TelegramApiException e){
+                    System.err.println("Error by send message " + e.getMessage());
+                }
+
+
             }
+        }  if(update.hasMessage() && update.getMessage().hasPhoto()) {
+            Long chatId = update.getMessage().getChatId();
+            Long taskId= userPhoto.get(chatId);
+
+            if(taskId == null){
+                sendMessage(chatId, "Now I` dont wait by photo. You need choose task or create");
+                return;
+            }
+            var photos = update.getMessage().getPhoto();
+            String fielId = photos.get(photos.size() - 1).getFileId();
+
+            try {
+                Task curentTask = taskService.getTaskById(taskId);
+                curentTask.setPhotoID(fielId);
+                taskService.updateTask(curentTask);
+                userPhoto.remove(chatId);
+            }catch (Exception e){
+                sendMessage(chatId, "Error by save photo ");
+                System.err.println("Error by save photo " + e.getMessage());
+            }
+
         }
     }
 
@@ -343,6 +391,7 @@ return keyboardMarkup;
         sendMessage(chatId, answer);
     }
 private void sendMessage(long chartId, String textToSend){
+
         SendMessage message =  new SendMessage();
         message.setChatId(String.valueOf(chartId));
         message.setText(textToSend);
@@ -355,6 +404,19 @@ private void sendMessage(long chartId, String textToSend){
 
 System.err.println("Failed send message: " + ex.getMessage() );
 
+        }
+}
+private void sendPhotomessage(Long chatId, String caption, String photoId, org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup keyboard){
+        SendPhoto message = new SendPhoto();
+        message.setChatId(String.valueOf(chatId));
+        message.setCaption(caption);
+        message.setPhoto(new InputFile(photoId));
+        message.setReplyMarkup(keyboard);
+
+        try {
+            execute(message);
+        }catch (TelegramApiException ex){
+            System.err.println("Failed send photo: " + ex.getMessage());
         }
 }
 

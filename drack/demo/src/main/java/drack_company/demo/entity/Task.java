@@ -38,15 +38,20 @@ public class Task {
 
  @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
  @PrePersist
     protected void onCreated(){
 this.createdAt = LocalDateTime.now();
  }
+
 @Column(name = "attached_file_name")
     private String attachedFileName;
 
 @Column(name = "chat_id")
     private Long chatId;
+
+@Column(name = "photo_id")
+private String photoID;
 
 }
 
